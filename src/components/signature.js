@@ -2,6 +2,9 @@ import React from 'react';
 
 const Signature = ({ signature }) => {
 	console.log(signature);
+	if (!signature) {
+		return;
+	}
 	const dateObj = new Date(signature._ts / 1000);
 	let dateString = `${dateObj.toLocaleString('default', {
 		weekday: 'long',

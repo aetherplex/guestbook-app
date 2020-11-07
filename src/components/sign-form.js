@@ -40,8 +40,7 @@ export default function SignForm({ setSigData }) {
 				_ts: queryResponse.ts,
 				_id: queryResponse.id,
 			};
-			const buildResponse = triggerBuild();
-			await buildResponse();
+			await triggerBuild();
 			return signatureInfo;
 		} catch (err) {
 			console.log(err);
