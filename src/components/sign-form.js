@@ -1,31 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import faunadb, { query as q } from 'faunadb';
 
-var client = new faunadb.Client({ secret: process.env.GATSBY_FAUNA_CLIENT_KEY });
+var client = new faunadb.Client({ secret: process.env.GATSBY_FAUNADB_CLIENT_KEY });
 
-export default class SignForm extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			sigName: '',
-			sigMessage: '',
-		};
-	}
+export default function SignForm({ setSigData }) {
+	const [sigName, setSigName] = useState('');
+	const [sigMessage, setSigMessage] = useState('');
 
-	handleSubmit = async (event) => {
+	const handleSubmit = async (event) => {
 		event.preventDefault();
-		const placeSig = await this.createSignature(this.state.sigName, this.state.sigMessage);
-		this.addSignature(placeSig);
-	};
-	handleInputChange = (event) => {
-		const { name, value } = event.target;
-		this.setState({
-			[name]: value,
-		});
+		const placeSig = await createSignature(sigName, sigMessage);
+		setSigData((prevState) => [...prevState, placeSig]);
 	};
 
-	createSignature = async (sigName, sigMessage) => {
+	const handleInputChange = (event) => {
+		const { name, value } = event.target;
+		name === 'sigName' ? setSigName(value) : setSigMessage(value);
+	};
+
+	const triggerBuild = async () => {
+		const response = await fetch(process.env.GATSBY_BUILD_HOOK, { method: 'POST', body: '{}' });
+		return response;
+	};
+
+	const createSignature = async (sigName, sigMessage) => {
 		try {
 			const queryResponse = await client.query(
 				q.Create(q.Collection('signatures'), {
@@ -41,48 +40,48 @@ export default class SignForm extends React.Component {
 				_ts: queryResponse.ts,
 				_id: queryResponse.id,
 			};
+			const buildResponse = triggerBuild();
+			await buildResponse();
 			return signatureInfo;
 		} catch (err) {
 			console.log(err);
 		}
 	};
 
-	render() {
-		return (
-			<form onSubmit={this.handleSubmit}>
-				<div className="field">
-					<div className="control">
-						<label className="label">
-							Label
-							<input
-								className="input is-fullwidth"
-								name="sigName"
-								type="text"
-								value={this.state.sigName}
-								onChange={this.handleInputChange}
-							/>
-						</label>
-					</div>
-				</div>
-				<div className="field">
-					<label>
-						Your Message:
-						<textarea
-							rows="5"
-							name="sigMessage"
-							value={this.state.sigMessage}
-							onChange={this.handleInputChange}
-							className="textarea"
-							placeholder="Leave us a happy note"
-						></textarea>
+	return (
+		<form onSubmit={handleSubmit}>
+			<div className="field">
+				<div className="control">
+					<label className="label">
+						Label
+						<input
+							className="input is-fullwidth"
+							name="sigName"
+							type="text"
+							value={sigName}
+							onChange={handleInputChange}
+						/>
 					</label>
 				</div>
-				<div className="buttons">
-					<button className="button is-primary" type="submit">
-						Sign the Guestbook
-					</button>
-				</div>
-			</form>
-		);
-	}
+			</div>
+			<div className="field">
+				<label>
+					Your Message:
+					<textarea
+						rows="5"
+						name="sigMessage"
+						value={sigMessage}
+						onChange={handleInputChange}
+						className="textarea"
+						placeholder="Leave us a happy note"
+					></textarea>
+				</label>
+			</div>
+			<div className="buttons">
+				<button className="button is-primary" type="submit">
+					Sign the Guestbook
+				</button>
+			</div>
+		</form>
+	);
 }
